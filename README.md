@@ -1,5 +1,3 @@
-proot
+PRoot
 =====
-[![Travis build status](https://travis-ci.org/termux/proot.svg?branch=master)](https://travis-ci.org/termux/proot)
-
-This is a copy of [the PRoot project](https://github.com/proot-me/PRoot/) with patches applied to work better under [Termux](https://termux.com).
+ It is a clone of the Termux version of PRoot with some additional adaptations for Android deployment.
