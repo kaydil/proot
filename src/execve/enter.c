@@ -547,6 +547,28 @@ end:
 }
 #endif
 
+static inline const char *where_am_i(const char *const postfix)
+{
+	char buf[PATH_MAX + 1];
+	const ssize_t r = readlink("/proc/self/exe", buf, sizeof(buf));
+	if (r < 0 || r >= sizeof(buf)) return NULL;
+	buf[r] = '\0';
+	char *p = strrchr(buf, '/');
+	if (p == NULL) return NULL;
+	p++;
+	const size_t postfix_len = strlen(postfix);
+	if (buf + sizeof(buf) - p < postfix_len + 1) return NULL;
+	memcpy(p, postfix, postfix_len + 1);
+	return talloc_strdup(talloc_autofree_context(), buf);
+}
+
+static inline const char *resolve_path(const char *const path)
+{
+	if (path == NULL) return NULL;
+	if (path[0] == '/') return path;
+	return where_am_i(path);
+}
+
 /**
  * Get the path to the loader for the given @tracee.  This function
  * returns NULL if an error occurred.
@@ -556,10 +578,10 @@ static inline const char *get_loader_path(const Tracee *tracee)
 #if defined(PROOT_UNBUNDLE_LOADER)
 #if defined(HAS_LOADER_32BIT)
 	if (IS_CLASS32(tracee->load_info->elf_header)) {
-		return getenv("PROOT_LOADER_32") ?: PROOT_UNBUNDLE_LOADER "/loader32";
+		return resolve_path(getenv("PROOT_LOADER_32") ?: PROOT_UNBUNDLE_LOADER "/loader32");
 	}
 #endif
-	return getenv("PROOT_LOADER") ?: PROOT_UNBUNDLE_LOADER "/loader";
+	return resolve_path(getenv("PROOT_LOADER") ?: PROOT_UNBUNDLE_LOADER "/loader");
 #else
 	static char *loader_path = NULL;
 
@@ -567,13 +589,13 @@ static inline const char *get_loader_path(const Tracee *tracee)
 	static char *loader32_path = NULL;
 
 	if (IS_CLASS32(tracee->load_info->elf_header)) {
-		loader32_path = loader32_path ?: getenv("PROOT_LOADER_32") ?: extract_loader(tracee, true);
+		loader32_path = loader32_path ?: resolve_path(getenv("PROOT_LOADER_32")) ?: extract_loader(tracee, true);
 		return loader32_path;
 	}
 	else
 #endif
 	{
-		loader_path = loader_path ?: getenv("PROOT_LOADER") ?: extract_loader(tracee, false);
+		loader_path = loader_path ?: resolve_path(getenv("PROOT_LOADER")) ?: extract_loader(tracee, false);
 		return loader_path;
 	}
 #endif
