@@ -233,27 +233,35 @@ static int handle_seccomp_event_common(Tracee *tracee)
 		int status;
 		char path[PATH_MAX];
 		char original[PATH_MAX];
+#if __ANDROID_API__ < 21
+		struct statfs my_statfs64;
+#else
 		struct statfs64 my_statfs64;
+#endif
 		struct compat_statfs my_statfs;
 		size = read_string(tracee, original, peek_reg(tracee, CURRENT, SYSARG_1), PATH_MAX);
 		if (size < 0) {
 			set_result_after_seccomp(tracee, size);
 			break;
 		}
-		if (size >= PATH_MAX) { 
+		if (size >= PATH_MAX) {
 			set_result_after_seccomp(tracee, -ENAMETOOLONG);
 			break;
 		}
-            	translate_path(tracee, path, AT_FDCWD, original, true);
+		translate_path(tracee, path, AT_FDCWD, original, true);
 		errno = 0;
-		status = statfs64(path, &my_statfs64); 
+#if __ANDROID_API__ < 21
+		status = statfs(path, &my_statfs64);
+#else
+		status = statfs64(path, &my_statfs64);
+#endif
 		if (errno != 0) {
 			set_result_after_seccomp(tracee, -errno);
 			break;
 		}
 		if ((my_statfs64.f_blocks | my_statfs64.f_bfree | my_statfs64.f_bavail |
-     		     my_statfs64.f_bsize | my_statfs64.f_frsize | my_statfs64.f_files | 
-		     my_statfs64.f_ffree) & 0xffffffff00000000ULL) { 
+			my_statfs64.f_bsize | my_statfs64.f_frsize | my_statfs64.f_files |
+			my_statfs64.f_ffree) & 0xffffffff00000000ULL) {
 			set_result_after_seccomp(tracee, -EOVERFLOW);
 			break;
 		}
@@ -269,7 +277,7 @@ static int handle_seccomp_event_common(Tracee *tracee)
 		my_statfs.f_frsize = my_statfs64.f_frsize;
 		my_statfs.f_flags = my_statfs64.f_flags;
 		memset(my_statfs.f_spare, 0, sizeof(my_statfs.f_spare));
-                write_data(tracee, peek_reg(tracee, CURRENT, SYSARG_2), &my_statfs, sizeof(struct compat_statfs));
+		write_data(tracee, peek_reg(tracee, CURRENT, SYSARG_2), &my_statfs, sizeof(struct compat_statfs));
 
 		set_result_after_seccomp(tracee, 0);
 		break;

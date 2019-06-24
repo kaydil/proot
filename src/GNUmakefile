@@ -22,7 +22,13 @@ OBJDUMP  = $(CROSS_COMPILE)objdump
 endif
 LD       = $(CC)
 
-CPPFLAGS += -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -I. -I$(VPATH)
+ifdef ANDROID_PRE5
+EXT_CPPFLAGS = -D__ANDROID_API__=14
+else
+EXT_CPPFLAGS = -D_FILE_OFFSET_BITS=64
+endif
+
+CPPFLAGS += $(EXT_CPPFLAGS) -D_GNU_SOURCE -I. -I$(VPATH)
 CFLAGS   += -Wall -Wextra -O2
 LDFLAGS  += -ltalloc -Wl,-z,noexecstack
 
