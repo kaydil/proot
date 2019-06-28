@@ -14,4 +14,4 @@ Features
 Known Issues
 -----
 
-"chfn: PAM: system error" (it seems, 32-bit architectures only are affected): https://github.com/proot-me/proot/issues/174#issuecomment-495406815
+"chfn: PAM: system error" (it seems, Debian and Ubuntu bootstraps for 32-bit architectures only are affected): https://github.com/proot-me/proot/issues/174#issuecomment-495406815 and https://github.com/proot-me/PRoot/issues/156
