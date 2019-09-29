@@ -1,6 +1,6 @@
 #!/system/bin/sh
 
-# It's suppsed to be used with Another Term Lite.
+# It's supposed to be used with Another Term Lite.
 # See https://github.com/green-green-avk/AnotherTermLite/wiki
 # for `DATA_DIR', `LIB_DIR' and `TERMSH_UID' environment variables meaning.
 
