@@ -28,6 +28,8 @@ fi
 unset TMPDIR
 unset LD_LIBRARY_PATH
 
+export TERMSH=termsh # Just for convenience.
+
 "$DATA_DIR/root/bin/proot" -r "$BASE_DIR/root" $UG \
 -b /dev -b /proc -b /sys -b /system -b /storage \
 -b "$LIB_DIR/libtermsh.so":/bin/termsh \
