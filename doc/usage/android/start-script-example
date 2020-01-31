@@ -17,7 +17,7 @@ SHELL=/bin/bash
 FB_SHELL=/bin/sh
 
 if [ -n "$1" ]
-then 
+then
 	UG="--change-id=$1"
 	if [ "$1" = '0:0' ]
 	then
