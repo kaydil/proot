@@ -13,7 +13,7 @@ Defaults are `libexec/proot/loader` / `libexec/proot/loader32` respectively.
 
 * `--tcsetsf2tcsetsw` as `TCSETSW` looks even better. `tcsetattr(TCSAFLUSH, ...)` => `tcsetattr(TCSADRAIN, ...)` in other words.
 
-* ANDROID_PRE5 make variable can be set in order to produce Android version < 5 (API < 21) compatible variant.
+* `ANDROID_PRE5` make variable can be set in order to produce Android version < 5 (API < 21) compatible variant.
 
 ## Known Issues
 
