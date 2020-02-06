@@ -348,12 +348,10 @@ static int parse_config(Tracee *tracee, size_t argc, char *const argv[])
 				if (strncmp(arg, argument->name, length) != 0)
 					continue;
 
-				/* Avoid ambiguities.  */
+				/* Possibly an option with a longer name.  */
 				if (strlen(arg) > length
-				    && arg[length] != argument->separator) {
-					print_error_separator(tracee, argument);
-					return -1;
-				}
+				    && arg[length] != argument->separator)
+					continue;
 
 				/* No option value.  */
 				if (!argument->value) {

@@ -310,10 +310,30 @@ static int handle_option_p(Tracee *tracee, const Cli *cli UNUSED, const char *va
         return 0;
 }
 
-static int handle_option_tcsetsf2tcsets(Tracee *tracee, const Cli *cli UNUSED, const char *value UNUSED)
+static int handle_option_tcsetsf2tcsets_v(Tracee *tracee, const Cli *cli UNUSED, const char *value)
 {
-        (void) initialize_extension(tracee, tcsetsf2tcsets, NULL);
-        return 0;
+	void *extension = get_extension(tracee, tcsetsf2tcsets_callback);
+	if (extension != NULL) {
+		note(tracee, WARNING, USER, "option --tcsetsf2tcsets[w] was already specified");
+		note(tracee, INFO, USER, "only the last --tcsetsf2tcsets[w] option is enabled");
+		TALLOC_FREE(extension);
+	}
+
+	const int status = initialize_extension(tracee, tcsetsf2tcsets_callback, value);
+	if (status < 0)
+		note(tracee, WARNING, INTERNAL, "tcsetsf2tcsets[w] not initialized");
+
+	return 0;
+}
+
+static int handle_option_tcsetsf2tcsets(Tracee *tracee, const Cli *cli, const char *value UNUSED)
+{
+	return handle_option_tcsetsf2tcsets_v(tracee, cli, (const char *)0);
+}
+
+static int handle_option_tcsetsf2tcsetsw(Tracee *tracee, const Cli *cli, const char *value UNUSED)
+{
+	return handle_option_tcsetsf2tcsets_v(tracee, cli, (const char *)1);
 }
 
 /**
