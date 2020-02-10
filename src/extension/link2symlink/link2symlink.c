@@ -1,6 +1,6 @@
 #include <stdio.h>     /* rename(2), */
 #include <stdlib.h>    /* atoi */
-#include <unistd.h>    /* symlink(2), symlinkat(2), readlink(2), lstat(2), unlink(2), unlinkat(2)*/
+#include <unistd.h>    /* access(2), symlink(2), symlinkat(2), readlink(2), lstat(2), unlink(2), unlinkat(2) */
 #include <string.h>    /* str*, strrchr, strcat, strcpy, strncpy, strncmp */
 #include <sys/types.h> /* lstat(2), */
 #include <sys/stat.h>  /* lstat(2), */
@@ -18,13 +18,17 @@
 #include "arch.h"
 #include "attribute.h"
 
+#define STRLEN(V) (sizeof(V) - 1)
+
 #ifdef USERLAND
 #define PREFIX ".proot.l2s."
-#endif 
+#endif
 #ifndef USERLAND
 #define PREFIX ".l2s."
-#endif 
+#endif
 #define DELETED_SUFFIX " (deleted)"
+
+static const char *env_PROOT_L2S_DIR = NULL;
 
 /**
  * Copy the contents of the @symlink into @value (nul terminated).
@@ -93,7 +97,7 @@ static int move_and_symlink_path(Tracee *tracee, Reg sysarg)
 		else
 			name++;
 
-		if (strncmp(name, PREFIX, strlen(PREFIX)) == 0)
+		if (strncmp(name, PREFIX, STRLEN(PREFIX)) == 0)
 			first_link = 0;
 	} else {
 		/* compute new name */
@@ -103,9 +107,9 @@ static int move_and_symlink_path(Tracee *tracee, Reg sysarg)
 		else
 			name++;
 
-		l2s_directory = getenv("PROOT_L2S_DIR");
+		l2s_directory = env_PROOT_L2S_DIR;
 		if (l2s_directory != NULL && l2s_directory[0]) {
-			if (strlen(PREFIX) + strlen(l2s_directory) + (strlen(original) - strlen(name)) + 6 >= PATH_MAX)
+			if (STRLEN(PREFIX) + strlen(l2s_directory) + (strlen(original) - strlen(name)) + 6 >= PATH_MAX)
 				return -ENAMETOOLONG;
 
 			strcpy(intermediate, l2s_directory);
@@ -113,7 +117,7 @@ static int move_and_symlink_path(Tracee *tracee, Reg sysarg)
 				strcat(intermediate, "/");
 			}
 		} else {
-			if (strlen(PREFIX) + strlen(original) + 5 >= PATH_MAX)
+			if (STRLEN(PREFIX) + strlen(original) + 5 >= PATH_MAX)
 				return -ENAMETOOLONG;
 
 			strncpy(intermediate, original, strlen(original) - strlen(name));
@@ -228,7 +232,7 @@ static int decrement_link_count(Tracee *tracee, Reg sysarg)
 		name++;
 
 	/* Check if an l2s file is pointed to */
-	if (strncmp(name, PREFIX, strlen(PREFIX)) != 0)
+	if (strncmp(name, PREFIX, STRLEN(PREFIX)) != 0)
 		return 0;
 
 	/* Read intermediate link - if this fails then
@@ -340,10 +344,9 @@ static int handle_sysexit_end(Tracee *tracee)
 					VERBOSE(tracee, 3, "link2symlink: readlink_proc_pid_fd failed, status=%d", status);
 					return 0; // Don't alter syscall result
 				}
-				if (strcmp(original + strlen(original) - strlen(DELETED_SUFFIX), DELETED_SUFFIX) == 0)
-					original[strlen(original) - strlen(DELETED_SUFFIX)] = '\0';
-			#endif
-			#ifdef USERLAND
+				if (strcmp(original + strlen(original) - STRLEN(DELETED_SUFFIX), DELETED_SUFFIX) == 0)
+					original[strlen(original) - STRLEN(DELETED_SUFFIX)] = '\0';
+			#else
 				size = read_string(tracee, original, peek_reg(tracee, CURRENT, SYSARG_2), PATH_MAX);
 				if (size < 0)
 					return size;
@@ -371,12 +374,12 @@ static int handle_sysexit_end(Tracee *tracee)
 		/* Check if it is a link */
 		status = lstat(original, &statl);
 
-		if (strncmp(name, PREFIX, strlen(PREFIX)) == 0) {
+		if (strncmp(name, PREFIX, STRLEN(PREFIX)) == 0) {
 			if (S_ISLNK(statl.st_mode)) {
-				strcpy(intermediate,original);
+				strcpy(intermediate, original);
 				goto intermediate_proc;
 			} else {
-				strcpy(final,original);
+				strcpy(final, original);
 				goto final_proc;
 			}
 		}
@@ -394,16 +397,20 @@ static int handle_sysexit_end(Tracee *tracee)
 		else
 			name++;
 
-		if (strncmp(name, PREFIX, strlen(PREFIX)) != 0)
+		if (strncmp(name, PREFIX, STRLEN(PREFIX)) != 0)
 			return 0;
 
-		intermediate_proc: size = my_readlink(intermediate, final);
-		if (size < 0)
-			return size;
+		intermediate_proc:
 
-		final_proc: status = lstat(final,&finalStat);
+		size = my_readlink(intermediate, final);
+		if (size < 0)
+			return 0; /* A dangling symlink looks better than a weird zombie file. */
+
+		final_proc:
+
+		status = lstat(final, &finalStat);
 		if (status < 0)
-			return status;
+			return 0; /* A dangling symlink looks better than a weird zombie file. */
 
 		finalStat.st_nlink = atoi(final + strlen(final) - 4);
 
@@ -467,10 +474,15 @@ static void translated_path(Tracee *tracee, char translated_path[PATH_MAX])
 		return;
 	component++;
 
-	if (strncmp(component, PREFIX, strlen(PREFIX)) != 0)
+	if (strncmp(component, PREFIX, STRLEN(PREFIX)) != 0)
 		return;
 
 	status = my_readlink(path, path2);
+	if (status < 0)
+		return;
+
+	/* A dangling symlink looks better than a weird zombie file. */
+	status = access(path2, F_OK);
 	if (status < 0)
 		return;
 
@@ -480,7 +492,7 @@ static void translated_path(Tracee *tracee, char translated_path[PATH_MAX])
 		return;
 	component++;
 
-	if (strncmp(component, PREFIX, strlen(PREFIX)) != 0)
+	if (strncmp(component, PREFIX, STRLEN(PREFIX)) != 0)
 		return;
 #endif
 
@@ -518,6 +530,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			{ PR_renameat2,		FILTER_SYSEXIT },
 			FILTERED_SYSNUM_END,
 		};
+		env_PROOT_L2S_DIR = getenv("PROOT_L2S_DIR");
 		extension->filtered_sysnums = filtered_sysnums;
 		return 0;
 	}

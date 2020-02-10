@@ -265,7 +265,7 @@ typedef struct {
 } ModifiedNode;
 
 /* List of syscalls handled by this extensions.  */
-static FilteredSysnum filtered_sysnums[] = {
+static const FilteredSysnum filtered_sysnums[] = {
 #ifdef USERLAND
 	{ PR_access,		FILTER_SYSEXIT },
 	{ PR_creat,		FILTER_SYSEXIT },

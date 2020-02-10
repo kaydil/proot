@@ -71,7 +71,7 @@ static int handle_option_tcsetsf2tcsetsw(Tracee *tracee, const Cli *cli, const c
 static int pre_initialize_bindings(Tracee *, const Cli *, size_t, char *const *, size_t);
 static int post_initialize_exe(Tracee *, const Cli *, size_t, char *const *, size_t);
 
-static Cli proot_cli = {
+static const Cli proot_cli = {
 	.version  = VERSION,
 	.name     = "proot",
 	.subtitle = "chroot, mount --bind, and binfmt_misc without privilege/setup",
@@ -238,9 +238,11 @@ Copyright (C) 2015 STMicroelectronics, licensed under GPL v2 or later.",
                 { .name = "-l", .separator = '\0', .value = NULL },
 		{ .name = NULL, .separator = '\0', .value = NULL } },
 	  .handler = handle_option_link2symlink,
-	  .description = "Replace hard links with symlinks, pretending they are really hardlinks",
+	  .description = "Replace hard links with symlinks, pretending they are hardlinks.",
 	  .detail = "\tEmulates hard links with symbolic links when SELinux policies\n\
-\tdo not allow hard links.",
+\tdo not allow hard links.\n\
+\tPROOT_L2S_DIR environment variable specifies a common directory\n\
+\tto store data for emulated hardlinks.",
 	},
         { .class = "Extension options",
           .arguments = {

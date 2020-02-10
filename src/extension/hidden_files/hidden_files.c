@@ -13,7 +13,7 @@
 #include "path/path.h"
 
 /* Change the HIDDEN_PREFIX to change which files are hidden */
-#define HIDDEN_PREFIX ".proot"
+#define HIDDEN_PREFIX ".proot."
 
 struct linux_dirent {
     unsigned long d_ino;
@@ -33,7 +33,7 @@ struct linux_dirent64 {
 /*
  * Blind copies the given num of bytes from src to dst
  */
-static void mybcopy(char *src, char *dst, unsigned int num) {
+static void mybcopy(const char *src, char *dst, unsigned int num) {
     while(num--) { *(dst++) = *(src++); }
 }
 
@@ -43,12 +43,12 @@ static void mybcopy(char *src, char *dst, unsigned int num) {
  * return 0
  */
 
-static int hasprefix(char *prefix, char *str) {
+static int hasprefix(const char *prefix, const char *str) {
     while (*prefix && *str && (*(prefix) == *(str))) {
         prefix++;
         str++;
     }
-  
+
     /* If there is not any prefix left after stepping
      * through the strings, then it matches */
     if (!(*prefix)) { return 1; }

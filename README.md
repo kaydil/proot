@@ -15,6 +15,12 @@ Defaults are `libexec/proot/loader` / `libexec/proot/loader32` respectively.
 
 * `ANDROID_PRE5` make variable can be set in order to produce Android version < 5 (API < 21) compatible variant.
 
+* Hardlinks with broken meta info is not weird zombie files anymore. Now they are just dangling symlinks.
+
+* Hidden files (`-H`) prefix changed: `.proot` => `.proot.`.
+
+* USERLAND variant meta file prefix changed: `.proot-meta-file.` => `.proot.meta-file.`.
+
 ## Known Issues
 
 "chfn: PAM: system error" (it seems, Debian and Ubuntu bootstraps for 32-bit architectures only are affected):
