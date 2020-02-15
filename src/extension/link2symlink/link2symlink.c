@@ -20,10 +20,12 @@
 
 #define STRLEN(V) (sizeof(V) - 1)
 
+/* .XXXX.YYYY */
+#define SUFFIX_LEN 10
+
 #ifdef USERLAND
 #define PREFIX ".proot.l2s."
-#endif
-#ifndef USERLAND
+#else
 #define PREFIX ".l2s."
 #endif
 #define DELETED_SUFFIX " (deleted)"
@@ -68,7 +70,7 @@ static int move_and_symlink_path(Tracee *tracee, Reg sysarg)
 	int status;
 	int link_count;
 	int first_link = 1;
-	int intermediate_suffix = 1;
+	uint32_t intermediate_suffix = 0;
 
 	/* Note: this path was already canonicalized.  */
 	size = read_string(tracee, original, peek_reg(tracee, CURRENT, sysarg), PATH_MAX);
@@ -101,15 +103,15 @@ static int move_and_symlink_path(Tracee *tracee, Reg sysarg)
 			first_link = 0;
 	} else {
 		/* compute new name */
-		name = strrchr(original,'/');
+		name = strrchr(original, '/');
 		if (name == NULL)
 			name = original;
 		else
 			name++;
 
 		l2s_directory = env_PROOT_L2S_DIR;
-		if (l2s_directory != NULL && l2s_directory[0]) {
-			if (STRLEN(PREFIX) + strlen(l2s_directory) + (strlen(original) - strlen(name)) + 6 >= PATH_MAX)
+		if (l2s_directory != NULL && l2s_directory[0] != '\0') {
+			if (strlen(l2s_directory) + strlen(name) + STRLEN(PREFIX) + SUFFIX_LEN + 2 >= PATH_MAX)
 				return -ENAMETOOLONG;
 
 			strcpy(intermediate, l2s_directory);
@@ -117,7 +119,7 @@ static int move_and_symlink_path(Tracee *tracee, Reg sysarg)
 				strcat(intermediate, "/");
 			}
 		} else {
-			if (STRLEN(PREFIX) + strlen(original) + 5 >= PATH_MAX)
+			if (strlen(original) + STRLEN(PREFIX) + SUFFIX_LEN + 1 >= PATH_MAX)
 				return -ENAMETOOLONG;
 
 			strncpy(intermediate, original, strlen(original) - strlen(name));
@@ -130,9 +132,10 @@ static int move_and_symlink_path(Tracee *tracee, Reg sysarg)
 	if (first_link) {
 		/*Move the original content to the new path. */
 		do {
-			sprintf(new_intermediate, "%s%04d", intermediate, intermediate_suffix);
+			sprintf(new_intermediate, "%s.%04X", intermediate, intermediate_suffix);
+			if (intermediate_suffix == 0xFFFF) return -ENAMETOOLONG;
 			intermediate_suffix++;
-		} while ((access(new_intermediate,F_OK) != -1) && (intermediate_suffix < 1000));
+		} while (access(new_intermediate, F_OK) != -1);
 		strcpy(intermediate, new_intermediate);
 
 		strcpy(final, intermediate);
@@ -530,7 +533,9 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			{ PR_renameat2,		FILTER_SYSEXIT },
 			FILTERED_SYSNUM_END,
 		};
-		env_PROOT_L2S_DIR = getenv("PROOT_L2S_DIR");
+		const char *const dir = getenv("PROOT_L2S_DIR");
+		if (dir != NULL)
+			env_PROOT_L2S_DIR = realpath(dir, NULL);
 		extension->filtered_sysnums = filtered_sysnums;
 		return 0;
 	}
