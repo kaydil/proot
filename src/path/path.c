@@ -355,7 +355,11 @@ int translate_path(Tracee *tracee, char result[PATH_MAX], int dir_fd,
 	VERBOSE(tracee, 2, "vpid %" PRIu64 ": translate(\"%s\" + \"%s\")",
 		tracee != NULL ? tracee->vpid : 0, result, user_path);
 
-	status = notify_extensions(tracee, GUEST_PATH, (intptr_t) result, (intptr_t) user_path);
+	char user_path_buf[PATH_MAX];
+
+	const handler_path_arg_t user_path_arg = { user_path, user_path_buf };
+
+	status = notify_extensions(tracee, GUEST_PATH, (intptr_t) result, (intptr_t) &user_path_arg);
 	if (status < 0)
 		return status;
 	if (status > 0)
@@ -364,7 +368,7 @@ int translate_path(Tracee *tracee, char result[PATH_MAX], int dir_fd,
 	/* So far "result" was used as a base path, it's time to join
 	 * it to the user path.  */
 	assert(result[0] == '/');
-	status = join_paths(2, guest_path, result, user_path);
+	status = join_paths(2, guest_path, result, user_path_arg.data);
 	if (status < 0)
 		return status;
 	strcpy(result, "/");
