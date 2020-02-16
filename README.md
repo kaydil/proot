@@ -17,9 +17,13 @@ Defaults are `libexec/proot/loader` / `libexec/proot/loader32` respectively.
 
 * Hardlinks with broken meta info is not weird zombie files anymore. Now they are just dangling symlinks.
 
-* Hidden files (`-H`) prefix changed: `.proot` => `.proot.`.
+* Hidden files (`-H` option):
+  * prefix changed: `.proot` => `.proot.`.
+  * escaping added (`.proot.xxx` => `.proot..proot.xxx` etc.) in order to prevent namespaces collision.
 
 * USERLAND variant meta file prefix changed: `.proot-meta-file.` => `.proot.meta-file.`.
+
+* Extensions API of `GUEST_PATH` handlers has been changed.
 
 ## Known Issues
 
