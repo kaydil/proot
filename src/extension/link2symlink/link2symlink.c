@@ -23,11 +23,7 @@
 /* .XXXX.YYYY */
 #define SUFFIX_LEN 10
 
-#ifdef USERLAND
 #define PREFIX ".proot.l2s."
-#else
-#define PREFIX ".l2s."
-#endif
 #define DELETED_SUFFIX " (deleted)"
 
 static const char *env_PROOT_L2S_DIR = NULL;

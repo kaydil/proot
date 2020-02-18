@@ -7,9 +7,7 @@
  * deleted by wildcard expressions.
  */
 
-#include <stddef.h>
-#include <string.h>
-
+#include "cli/note.h"
 #include "extension/extension.h"
 #include "tracee/mem.h"
 #include "syscall/chain.h"
@@ -17,7 +15,6 @@
 
 /* Change the HIDDEN_PREFIX to change which files are hidden */
 #define HIDDEN_PREFIX ".proot."
-#define STRLEN(V) (sizeof(V) - 1)
 
 struct linux_dirent {
     unsigned long d_ino;
@@ -118,17 +115,6 @@ static int handle_getdents(Tracee *const tracee)
 
                     /* move the pos and nleft */
                     pos += curr64->d_reclen;
-                } else if (hasprefix(HIDDEN_PREFIX, curr64->d_name + STRLEN(HIDDEN_PREFIX))) {
-                    /* Unescape: `.proot..proot.' => `.proot.' */
-                    const size_t prefix_off = offsetof(struct linux_dirent64, d_name);
-                    mybcopy(ptr, pos, prefix_off);
-                    mybcopy(ptr + prefix_off + STRLEN(HIDDEN_PREFIX),
-                            pos + prefix_off,
-                            curr64->d_reclen - prefix_off - STRLEN(HIDDEN_PREFIX));
-                    const size_t reclen = curr64->d_reclen - STRLEN(HIDDEN_PREFIX);
-                    ((struct linux_dirent64 *)pos)->d_reclen = reclen;
-                    ((struct linux_dirent64 *)pos)->d_off = pos - copy + reclen;
-                    pos += reclen;
                 }
                 /* move to the next linux_dirent */
                 ptr += curr64->d_reclen;
@@ -147,17 +133,6 @@ static int handle_getdents(Tracee *const tracee)
 
                     /* move the pos and nleft */
                     pos += curr32->d_reclen;
-                } else if (hasprefix(HIDDEN_PREFIX, curr32->d_name + STRLEN(HIDDEN_PREFIX))) {
-                    /* Unescape: `.proot..proot.' => `.proot.' */
-                    const size_t prefix_off = offsetof(struct linux_dirent, d_name);
-                    mybcopy(ptr, pos, prefix_off);
-                    mybcopy(ptr + prefix_off + STRLEN(HIDDEN_PREFIX),
-                            pos + prefix_off,
-                            curr32->d_reclen - prefix_off - STRLEN(HIDDEN_PREFIX));
-                    const size_t reclen = curr32->d_reclen - STRLEN(HIDDEN_PREFIX);
-                    ((struct linux_dirent *)pos)->d_reclen = reclen;
-                    ((struct linux_dirent *)pos)->d_off = pos - copy + reclen;
-                    pos += reclen;
                 }
                 /* move to the next linux_dirent */
                 ptr += curr32->d_reclen;
@@ -192,32 +167,6 @@ static int handle_getdents(Tracee *const tracee)
 }
 
 /**
- * Escape
- */
-static int handle_guest_path(Tracee *const tracee, char base[PATH_MAX], handler_path_arg_t *const guest)
-{
-    char *name = strrchr(guest->data, '/');
-    if (name == NULL) name = (char *) guest->data;
-    else name++;
-    if (hasprefix(HIDDEN_PREFIX, name)) {
-        if (strlen(guest->data) + STRLEN(HIDDEN_PREFIX) >= PATH_MAX)
-            return -ENAMETOOLONG;
-        if (guest->data == guest->buf) {
-            memmove(name + STRLEN(HIDDEN_PREFIX), name, strlen(name) + 1);
-            memcpy(name, HIDDEN_PREFIX, STRLEN(HIDDEN_PREFIX));
-        } else {
-            const size_t guest_base = name - guest->data;
-            if (guest_base != 0)
-                memcpy(guest->buf, guest->data, guest_base);
-            memcpy(guest->buf + guest_base, HIDDEN_PREFIX, STRLEN(HIDDEN_PREFIX));
-            strcpy(guest->buf + guest_base + STRLEN(HIDDEN_PREFIX), name);
-            guest->data = guest->buf;
-        }
-    }
-    return 0;
-}
-
-/**
  * Handler for this @extension.  It is triggered each time an @event
  * occured.  See ExtensionEvent for the meaning of @data1 and @data2.
  */
@@ -239,9 +188,6 @@ int hidden_files_callback(Extension *extension, ExtensionEvent event,
     case SYSCALL_CHAINED_EXIT:
     case SYSCALL_EXIT_END:
         return handle_getdents(TRACEE(extension));
-
-    case GUEST_PATH:
-        return handle_guest_path(TRACEE(extension), (char *) data1, (handler_path_arg_t *) data2);
 
     default:
         return 0;

@@ -33,7 +33,7 @@
 typedef enum {
 	/* A guest path passed as an argument of the current syscall
 	 * is about to be translated: "(char *) data1" is the base for
-	 * "(handler_path_arg_t *) data2" -- the guest path -- if this latter is
+	 * "(const char *) data2" -- the guest path -- if this latter is
 	 * relative.  If the extension returns > 0, then PRoot skips
 	 * its own handling.  If the extension returns < 0, then PRoot
 	 * reports this errno as-is.  */
@@ -144,12 +144,6 @@ typedef enum {
 } ExtensionEvent;
 
 #define CLONE_RECONF ((word_t) -1)
-
-/* For const arguments of handlers */
-typedef struct {
-	const char *data; // Should be set to `buf' if changed.
-	char *buf;
-} handler_path_arg_t;
 
 struct extension;
 typedef int (*extension_callback_t)(struct extension *extension, ExtensionEvent event,

@@ -15,15 +15,14 @@ Defaults are `libexec/proot/loader` / `libexec/proot/loader32` respectively.
 
 * `ANDROID_PRE5` make variable can be set in order to produce Android version < 5 (API < 21) compatible variant.
 
-* Hardlinks with broken meta info is not weird zombie files anymore. Now they are just dangling symlinks.
+* Hardlinks:
+  * with broken meta info is not weird zombie files anymore. Now they are just dangling symlinks;
+  * prefix `.l2s.` => `.proot.l2s.` for non-UserLAnd builds.
 
 * Hidden files (`-H` option):
   * prefix changed: `.proot` => `.proot.`.
-  * escaping added (`.proot.xxx` => `.proot..proot.xxx` etc.) in order to prevent namespaces collision.
 
 * USERLAND variant meta file prefix changed: `.proot-meta-file.` => `.proot.meta-file.`.
-
-* Extensions API of `GUEST_PATH` handlers has been changed.
 
 ## Known Issues
 
