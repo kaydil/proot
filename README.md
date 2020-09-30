@@ -16,7 +16,7 @@ Defaults are `libexec/proot/loader` / `libexec/proot/loader32` respectively.
 * `ANDROID_PRE5` make variable can be set in order to produce Android version < 5 (API < 21) compatible variant.
 
 * Hardlinks:
-  * with broken meta info is not weird zombie files anymore. Now they are just dangling symlinks;
+  * with broken meta info are not weird zombie files anymore. Now they are just dangling symlinks;
   * prefix `.l2s.` => `.proot.l2s.` for non-UserLAnd builds.
 
 * Hidden files (`-H` option):
