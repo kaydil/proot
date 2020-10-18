@@ -576,12 +576,22 @@ static inline const char *resolve_path(const char *const path)
 static inline const char *get_loader_path(const Tracee *tracee)
 {
 #if defined(PROOT_UNBUNDLE_LOADER)
+
+#ifndef PROOT_UNBUNDLE_LOADER_NAME
+#define PROOT_UNBUNDLE_LOADER_NAME "loader"
+#endif
+
 #if defined(HAS_LOADER_32BIT)
+
+#ifndef PROOT_UNBUNDLE_LOADER_NAME_32
+#define PROOT_UNBUNDLE_LOADER_NAME_32 "loader32"
+#endif
+
 	if (IS_CLASS32(tracee->load_info->elf_header)) {
-		return resolve_path(getenv("PROOT_LOADER_32") ?: PROOT_UNBUNDLE_LOADER "/loader32");
+		return resolve_path(getenv("PROOT_LOADER_32") ?: PROOT_UNBUNDLE_LOADER "/" PROOT_UNBUNDLE_LOADER_NAME_32);
 	}
 #endif
-	return resolve_path(getenv("PROOT_LOADER") ?: PROOT_UNBUNDLE_LOADER "/loader");
+	return resolve_path(getenv("PROOT_LOADER") ?: PROOT_UNBUNDLE_LOADER "/" PROOT_UNBUNDLE_LOADER_NAME);
 #else
 	static char *loader_path = NULL;
 

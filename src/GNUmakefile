@@ -5,9 +5,6 @@
 VPATH := $(dir $(lastword $(MAKEFILE_LIST)))
 SRC    = $(dir $(firstword $(MAKEFILE_LIST)))
 
-# Prefix on the target (relocatable by default)
-TARGET_ROOT ?= ..
-
 GIT      = git
 RM       = rm
 INSTALL  = install
@@ -100,8 +97,13 @@ endef
 $(eval $(call define_from_arch.h,,HAS_LOADER_32BIT))
 $(eval $(call define_from_arch.h,,HAS_POKEDATA_WORKAROUND))
 
+PROOT_UNBUNDLE_LOADER_NAME ?= loader
+PROOT_UNBUNDLE_LOADER_NAME_32 ?= loader32
+
 ifdef PROOT_UNBUNDLE_LOADER
-  CFLAGS += "-DPROOT_UNBUNDLE_LOADER=\"$(TARGET_ROOT)/$(PROOT_UNBUNDLE_LOADER)\""
+  CFLAGS += "-DPROOT_UNBUNDLE_LOADER=\"$(PROOT_UNBUNDLE_LOADER)\"" \
+            "-DPROOT_UNBUNDLE_LOADER_NAME=\"$(PROOT_UNBUNDLE_LOADER_NAME)\"" \
+            "-DPROOT_UNBUNDLE_LOADER_NAME_32=\"$(PROOT_UNBUNDLE_LOADER_NAME_32)\""
 proot: | loader/loader
 ifdef HAS_LOADER_32BIT
 proot: | loader/loader-m32
@@ -258,24 +260,24 @@ DEPS = $(OBJECTS:.o=.d) $(LOADER_OBJECTS:.o=.d) $(LOADER-m32_OBJECTS:.o=.d) $(CH
 # PHONY targets
 
 PREFIX ?= /usr/local
-DESTDIR = $(PREFIX)/bin
-LOADERDIR = $(PREFIX)/$(PROOT_UNBUNDLE_LOADER)
+BINDIR ?= $(PREFIX)/bin
+LOADERDIR ?= $(BINDIR)/$(PROOT_UNBUNDLE_LOADER)
 
 .PHONY: clean distclean install uninstall
 clean distclean:
 	-$(RM) -f $(CHECK_OBJECTS) $(CHECK_PROGRAMS) $(CHECK_RESULTS) $(OBJECTS) $(LOADER_OBJECTS) $(LOADER-m32_OBJECTS) proot loader/loader loader/loader-m32 loader/loader-info.{c,d,o} $(DEPS) build.h licenses
 
 install: proot
-	$($(quiet)INSTALL) -D $< $(DESTDIR)/$<
+	$($(quiet)INSTALL) -D $< $(BINDIR)/$<
 ifdef PROOT_UNBUNDLE_LOADER
-	$(INSTALL) -D loader/loader $(LOADERDIR)/loader
+	$(INSTALL) -D loader/loader $(LOADERDIR)/$(PROOT_UNBUNDLE_LOADER_NAME)
 ifdef HAS_LOADER_32BIT
-	$(INSTALL) -D loader/loader-m32 $(LOADERDIR)/loader32
+	$(INSTALL) -D loader/loader-m32 $(LOADERDIR)/$(PROOT_UNBUNDLE_LOADER_NAME_32)
 endif
 endif
 
 uninstall:
-	-$(RM) -f $(DESTDIR)/proot
+	-$(RM) -f $(BINDIR)/proot
 ifdef PROOT_UNBUNDLE_LOADER
 	$(INSTALL) -D loader/loader $(LOADERDIR)/loader
 	$(INSTALL) -D loader/loader-m32 $(LOADERDIR)/loader32
