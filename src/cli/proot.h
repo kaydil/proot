@@ -67,6 +67,7 @@ static int handle_option_H(Tracee *tracee, const Cli *cli, const char *value);
 static int handle_option_p(Tracee *tracee, const Cli *cli, const char *value);
 static int handle_option_tcsetsf2tcsets(Tracee *tracee, const Cli *cli, const char *value);
 static int handle_option_tcsetsf2tcsetsw(Tracee *tracee, const Cli *cli, const char *value);
+static int handle_option_memfd(Tracee *tracee, const Cli *cli, const char *value);
 
 static int pre_initialize_bindings(Tracee *, const Cli *, size_t, char *const *, size_t);
 static int post_initialize_exe(Tracee *, const Cli *, size_t, char *const *, size_t);
@@ -77,7 +78,8 @@ static const Cli proot_cli = {
 	.subtitle = "chroot, mount --bind, and binfmt_misc without privilege/setup",
 	.synopsis = "proot [option] ... [command]",
 	.colophon = "Visit http://proot.me for help, bug reports, suggestions, patchs, ...\n\
-Copyright (C) 2015 STMicroelectronics, licensed under GPL v2 or later.",
+Copyright (C) 2015 STMicroelectronics, licensed under GPL v2 or later.\n\
+// Refined by Alex Kiselev see https://github.com/green-green-avk/proot for details.",
 	.logo = "\
  _____ _____              ___\n\
 |  __ \\  __ \\_____  _____|   |_\n\
@@ -283,6 +285,15 @@ Copyright (C) 2015 STMicroelectronics, licensed under GPL v2 or later.",
           .handler = handle_option_tcsetsf2tcsetsw,
           .description = "TCSETSF is forbidden in Android. Substitute with TCSETSW.",
           .detail = "tcsetattr(TCSAFLUSH, ...) => tcsetattr(TCSDRAIN, ...) in other words.",
+        },
+        { .class = "Extension options",
+          .arguments = {
+                { .name = "--bind-memfd", .separator = '=', .value = "string" },
+                { .name = NULL, .separator = '\0', .value = NULL } },
+          .handler = handle_option_memfd,
+          .description = "Use memfd_create() for any file creation when its path matches the pattern.",
+          .detail = "Pattern acts like the fnmatch() one with the FNM_PATHNAME and FNM_EXTMATCH flags.\n\
+                     // Experimental. No open_by_handle_at syscall support yet.",
         },
 	{ .class = "Alias options",
 	  .arguments = {

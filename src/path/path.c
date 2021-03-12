@@ -55,7 +55,6 @@ int join_paths(int number_paths, char result[PATH_MAX], ...)
 	int status;
 	int i;
 
-	result[0] = '\0';
 	length = 0;
 	status = 0;
 
@@ -71,42 +70,44 @@ int join_paths(int number_paths, char result[PATH_MAX], ...)
 			continue;
 		path_length = strlen(path);
 
-		/* A new path separator is needed.  */
+		/* A new path separator is needed. */
 		if (length > 0 && result[length - 1] != '/' && path[0] != '/') {
 			new_length = length + path_length + 1;
 			if (new_length + 1 >= PATH_MAX) {
 				status = -ENAMETOOLONG;
 				break;
 			}
-			strcat(result + length, "/");
-			strcat(result + length, path);
+			result[length] = '/';
+			strcpy(result + length + 1, path);
 			length = new_length;
 		}
-		/* There are already two path separators.  */
+		/* There are already two path separators. */
 		else if (length > 0 && result[length - 1] == '/' && path[0] == '/') {
 			new_length = length + path_length - 1;
 			if (new_length + 1 >= PATH_MAX) {
 				status = -ENAMETOOLONG;
 				break;
 			}
-			strcat(result + length, path + 1);
-			length += path_length - 1;
+			strcpy(result + length, path + 1);
+			length = new_length;
 		}
-		/* There's already one path separator or result[] is empty.  */
+		/* There's already one path separator or result[] is empty. */
 		else {
 			new_length = length + path_length;
 			if (new_length + 1 >= PATH_MAX) {
 				status = -ENAMETOOLONG;
 				break;
 			}
-			strcat(result + length, path);
-			length += path_length;
+			if (result + length != path)
+				strcpy(result + length, path);
+			length = new_length;
 		}
 
 		status = 0;
 	}
 	va_end(paths);
 
+	result[length] = '\0';
 	return status;
 }
 

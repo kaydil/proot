@@ -326,6 +326,22 @@ static int handle_option_tcsetsf2tcsets_v(Tracee *tracee, const Cli *cli UNUSED,
 	return 0;
 }
 
+static int handle_option_memfd(Tracee *tracee, const Cli *cli UNUSED, const char *value)
+{
+	void *extension = get_extension(tracee, memfd_callback);
+	if (extension != NULL) {
+		note(tracee, WARNING, USER, "option --bind-memfd was already specified");
+		note(tracee, INFO, USER, "only the last --bind-memfd option is in effect");
+		TALLOC_FREE(extension);
+	}
+
+	const int status = initialize_extension(tracee, memfd_callback, value);
+	if (status < 0)
+		note(tracee, WARNING, INTERNAL, "memfd not initialized");
+
+	return 0;
+}
+
 static int handle_option_tcsetsf2tcsets(Tracee *tracee, const Cli *cli, const char *value UNUSED)
 {
 	return handle_option_tcsetsf2tcsets_v(tracee, cli, (const char *)0);

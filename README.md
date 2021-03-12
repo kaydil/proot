@@ -13,6 +13,10 @@ Defaults are `../libexec/proot/loader` / `../libexec/proot/loader32` respectivel
 
 * `--tcsetsf2tcsetsw` as `TCSETSW` looks even better. `tcsetattr(TCSAFLUSH, ...)` => `tcsetattr(TCSADRAIN, ...)` in other words.
 
+* `--bind-memfd=<pattern>` option as long as Android does not provide access to *tmpfs* for regular apps. It uses `memfd_create()`.
+Pattern acts like the `fnmatch()` one with the `FNM_PATHNAME` and `FNM_EXTMATCH` flags.
+*Experimental. No `open_by_handle_at` syscall support yet.*
+
 * `ANDROID_PRE5` make variable can be set in order to produce Android version < 5 (API < 21) compatible variant.
 
 * Hardlinks:
