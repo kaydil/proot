@@ -12,7 +12,7 @@ int tcsetsf2tcsets_callback(Extension *const extension, const ExtensionEvent eve
 	switch (event) {
 	case INITIALIZATION: {
 		static const FilteredSysnum filtered_sysnums[] = {
-			{ PR_ioctl, FILTER_SYSEXIT },
+			{ PR_ioctl, 0 },
 			FILTERED_SYSNUM_END
 		};
 		subst_cmd = data1 ? TCSETSW : TCSETS;
