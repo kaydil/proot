@@ -418,7 +418,8 @@ int detranslate_path(Tracee *tracee, char path[PATH_MAX], const char t_referrer[
 		return 0;
 
 	/* Is it a symlink?  */
-	if (t_referrer != NULL) {
+	if (t_referrer != NULL &&
+			t_referrer[0] == '/') { // TODO: assert here & fix readlink[at]() syscalls
 		Comparison comparison;
 
 		sanity_check = false;
