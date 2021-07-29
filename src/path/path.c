@@ -402,6 +402,8 @@ skip:
  */
 int detranslate_path(Tracee *tracee, char path[PATH_MAX], const char t_referrer[PATH_MAX])
 {
+	VERBOSE(tracee, 5, "detranslate_path(): path=[%s] ref=[%s]", path, t_referrer);
+
 	size_t prefix_length;
 	ssize_t new_length;
 
@@ -436,8 +438,9 @@ int detranslate_path(Tracee *tracee, char path[PATH_MAX], const char t_referrer[
 			new_length = readlink_proc2(tracee, proc_path, t_referrer);
 			if (new_length < 0)
 				return new_length;
-			if (new_length != 0) {
+			if (new_length > 0) {
 				strcpy(path, proc_path);
+				VERBOSE(tracee, 5, "detranslate_path(): new path=[%s]", path);
 				return new_length + 1;
 			}
 
@@ -478,6 +481,7 @@ int detranslate_path(Tracee *tracee, char path[PATH_MAX], const char t_referrer[
 		case 0:
 			return 0;
 		case 1:
+			VERBOSE(tracee, 5, "detranslate_path(): new path=[%s]", path);
 			return strlen(path) + 1;
 		default:
 			break;
@@ -513,6 +517,7 @@ int detranslate_path(Tracee *tracee, char path[PATH_MAX], const char t_referrer[
 			return 0;
 	}
 
+	VERBOSE(tracee, 5, "detranslate_path(): new path=[%s]", path);
 	return new_length + 1;
 }
 

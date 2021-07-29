@@ -362,6 +362,10 @@ void translate_syscall_exit(Tracee *tracee)
 			break;
 		}
 
+		/* The only place where we need to do something with symlinks.  */
+		if (referer == NULL || strncmp(referer, "/proc/", 6) != 0)
+			goto end;
+
 		status = detranslate_path(tracee, referee, referer);
 		if (status < 0)
 			break;
