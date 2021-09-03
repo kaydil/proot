@@ -13,6 +13,21 @@ Defaults are `../libexec/proot/loader` / `../libexec/proot/loader32` respectivel
 
 * `--tcsetsf2tcsetsw` as `TCSETSW` looks even better. `tcsetattr(TCSAFLUSH, ...)` => `tcsetattr(TCSADRAIN, ...)` in other words.
 
+* `--mute-setxid` return `0` for calls
+  - `setuid()`
+  - `setuid32()`
+  - `setgid()`
+  - `setgid32()`
+  - `setreuid()`
+  - `setreuid32()`
+  - `setregid()`
+  - `setregid32()`
+  - `setresuid()`
+  - `setresuid32()`
+  - `setresgid()`
+  - `setresgid32()`
+if they trigger `SIGSYS` (Android related).
+
 * `--bind-memfd=<pattern>` option as long as Android does not provide access to *tmpfs* for regular apps. It uses `memfd_create()`.
 Pattern acts like the `fnmatch()` one with the `FNM_PATHNAME` and `FNM_EXTMATCH` flags.
 *Experimental. No `open_by_handle_at` syscall support yet.*

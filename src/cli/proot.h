@@ -6,7 +6,7 @@
 #include "cli/cli.h"
 
 #ifndef VERSION
-#define VERSION "5.1.0-mod-0.11"
+#define VERSION "5.1.0-mod-0.12"
 #endif
 
 static const char *recommended_bindings[] = {
@@ -67,6 +67,7 @@ static int handle_option_H(Tracee *tracee, const Cli *cli, const char *value);
 static int handle_option_p(Tracee *tracee, const Cli *cli, const char *value);
 static int handle_option_tcsetsf2tcsets(Tracee *tracee, const Cli *cli, const char *value);
 static int handle_option_tcsetsf2tcsetsw(Tracee *tracee, const Cli *cli, const char *value);
+static int handle_option_mute_setxid(Tracee *tracee, const Cli *cli, const char *value);
 static int handle_option_memfd(Tracee *tracee, const Cli *cli, const char *value);
 
 static int pre_initialize_bindings(Tracee *, const Cli *, size_t, char *const *, size_t);
@@ -285,6 +286,14 @@ Copyright (C) 2015 STMicroelectronics, licensed under GPL v2 or later.\n\
           .handler = handle_option_tcsetsf2tcsetsw,
           .description = "TCSETSF is forbidden in Android. Substitute with TCSETSW.",
           .detail = "tcsetattr(TCSAFLUSH, ...) => tcsetattr(TCSDRAIN, ...) in other words.",
+        },
+        { .class = "Extension options",
+          .arguments = {
+                { .name = "--mute-setxid", .separator = '\0', .value = NULL },
+                { .name = NULL, .separator = '\0', .value = NULL } },
+          .handler = handle_option_mute_setxid,
+          .description = "setXid() calls can be disabled in Android. Return success unconditionally.",
+          .detail = "",
         },
         { .class = "Extension options",
           .arguments = {

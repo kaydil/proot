@@ -326,6 +326,21 @@ static int handle_option_tcsetsf2tcsets_v(Tracee *tracee, const Cli *cli UNUSED,
 	return 0;
 }
 
+static int handle_option_mute_setxid(Tracee *tracee, const Cli *cli UNUSED, const char *value)
+{
+	void *extension = get_extension(tracee, mute_setxid_callback);
+	if (extension != NULL) {
+		note(tracee, WARNING, USER, "option --mute-setxid was already specified");
+		TALLOC_FREE(extension);
+	}
+
+	const int status = initialize_extension(tracee, mute_setxid_callback, value);
+	if (status < 0)
+		note(tracee, WARNING, INTERNAL, "mute-setxid not initialized");
+
+	return 0;
+}
+
 static int handle_option_memfd(Tracee *tracee, const Cli *cli UNUSED, const char *value)
 {
 	void *extension = get_extension(tracee, memfd_callback);

@@ -90,6 +90,7 @@ OBJECTS += \
 	extension/link2symlink/link2symlink.o \
 	extension/fix_symlink_size/fix_symlink_size.o \
 	extension/tcsetsf2tcsets/tcsetsf2tcsets.o \
+	extension/mute_setxid/mute_setxid.o \
 	extension/memfd/memfd.o
 
 define define_from_arch.h
