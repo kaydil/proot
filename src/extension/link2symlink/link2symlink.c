@@ -317,6 +317,7 @@ static int handle_sysexit_end(Tracee *tracee)
 	case PR_lstat64:                   //int lstat(const char *path, struct stat *buf);
 	case PR_fstat64:                   //int fstat(int fd, struct stat *buf);
 	case PR_stat:                      //int stat(const char *path, struct stat *buf);
+	case PR_statx:                     //int statx(int fd, const char *path, unsigned flags, unsigned mask, struct statx *buf);
 	case PR_lstat:                     //int lstat(const char *path, struct stat *buf);
 	case PR_fstat: {                   //int fstat(int fd, struct stat *buf);
 		word_t result;
@@ -353,7 +354,7 @@ static int handle_sysexit_end(Tracee *tracee)
 					return -ENAMETOOLONG;
 			#endif
 		} else {
-			if (sysnum == PR_fstatat64 || sysnum == PR_newfstatat)
+			if (sysnum == PR_fstatat64 || sysnum == PR_newfstatat || sysnum == PR_statx)
 				sysarg_path = SYSARG_2;
 			else
 				sysarg_path = SYSARG_1;
@@ -416,6 +417,8 @@ static int handle_sysexit_end(Tracee *tracee)
 		/* Get the address of the 'stat' structure.  */
 		if (sysnum == PR_fstatat64 || sysnum == PR_newfstatat)
 			sysarg_stat = SYSARG_3;
+		else if (sysnum == PR_statx)
+			sysarg_stat = SYSARG_5;
 		else
 			sysarg_stat = SYSARG_2;
 
@@ -523,6 +526,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			{ PR_lstat64,		FILTER_SYSEXIT },
 			{ PR_newfstatat,	FILTER_SYSEXIT },
 			{ PR_stat,		FILTER_SYSEXIT },
+			{ PR_statx,		FILTER_SYSEXIT },
 			{ PR_stat64,		FILTER_SYSEXIT },
 			{ PR_rename,		FILTER_SYSEXIT },
 			{ PR_renameat,		FILTER_SYSEXIT },

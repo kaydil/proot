@@ -11,10 +11,13 @@
 #include "extension/fake_id0/helper_functions.h"
 
 #ifndef USERLAND
-int handle_stat_exit_end(Tracee *tracee, Config *config, Reg stat_sysarg) {
+int handle_stat_exit_end(Tracee *tracee, Config *config, word_t sysnum) {
 	word_t address;
+	Reg sysarg;
 	uid_t uid;
 	gid_t gid;
+	off_t uid_offset;
+	off_t gid_offset;
 	word_t result;
 
 	/* Override only if it succeed.  */
@@ -22,28 +25,43 @@ int handle_stat_exit_end(Tracee *tracee, Config *config, Reg stat_sysarg) {
 	if (result != 0)
 		return 0;
 
-	address = peek_reg(tracee, ORIGINAL, stat_sysarg);
+	/* Get the address of the 'stat' structure.  */
+	if (sysnum == PR_statx) {
+		sysarg = SYSARG_5;
+		uid_offset = OFFSETOF_STATX_UID;
+		gid_offset = OFFSETOF_STATX_GID;
+	}
+	else {
+		if (sysnum == PR_fstatat64 || sysnum == PR_newfstatat)
+			sysarg = SYSARG_3;
+		else
+			sysarg = SYSARG_2;
+		uid_offset = offsetof_stat_uid(tracee);
+		gid_offset = offsetof_stat_gid(tracee);
+	}
+
+	address = peek_reg(tracee, ORIGINAL, sysarg);
 
 	/* Sanity checks.  */
 	assert(__builtin_types_compatible_p(uid_t, uint32_t));
 	assert(__builtin_types_compatible_p(gid_t, uint32_t));
 
 	/* Get the uid & gid values from the 'stat' structure.  */
-	uid = peek_uint32(tracee, address + offsetof_stat_uid(tracee));
+	uid = peek_uint32(tracee, address + uid_offset);
 	if (errno != 0)
 		uid = 0; /* Not fatal.  */
 
-	gid = peek_uint32(tracee, address + offsetof_stat_gid(tracee));
+	gid = peek_uint32(tracee, address + gid_offset);
 	if (errno != 0)
 		gid = 0; /* Not fatal.  */
 
 	/* Override only if the file is owned by the current user.
 	 * Errors are not fatal here.  */
 	if (uid == getuid())
-		poke_uint32(tracee, address + offsetof_stat_uid(tracee), config->suid);
+		poke_uint32(tracee, address + uid_offset, config->suid);
 
 	if (gid == getgid())
-		poke_uint32(tracee, address + offsetof_stat_gid(tracee), config->sgid);
+		poke_uint32(tracee, address + gid_offset, config->sgid);
 
 	return 0;
 }
@@ -77,6 +95,8 @@ int handle_stat_exit_end(Tracee *tracee, Config *config, word_t sysnum) {
 	Reg sysarg;
 	uid_t uid;
 	gid_t gid;
+	off_t uid_offset;
+	off_t gid_offset;
 	mode_t mode;
 	struct stat my_stat;
 	char path[PATH_MAX];
@@ -102,10 +122,19 @@ int handle_stat_exit_end(Tracee *tracee, Config *config, word_t sysnum) {
 		return 0;
 
 	/* Get the address of the 'stat' structure.  */
-	if (sysnum == PR_fstatat64 || sysnum == PR_newfstatat)
-		sysarg = SYSARG_3;
-	else
-		sysarg = SYSARG_2;
+	if (sysnum == PR_statx) {
+		sysarg = SYSARG_5;
+		uid_offset = OFFSETOF_STATX_UID;
+		gid_offset = OFFSETOF_STATX_GID;
+	}
+	else {
+		if (sysnum == PR_fstatat64 || sysnum == PR_newfstatat)
+			sysarg = SYSARG_3;
+		else
+			sysarg = SYSARG_2;
+		uid_offset = offsetof_stat_uid(tracee);
+		gid_offset = offsetof_stat_gid(tracee);
+	}
 
 	/** If the meta file exists, read the data from it and replace it the
 	 *  relevant data in the stat structure.
@@ -136,21 +165,21 @@ int handle_stat_exit_end(Tracee *tracee, Config *config, word_t sysnum) {
 	assert(__builtin_types_compatible_p(gid_t, uint32_t));
 
 	/* Get the uid & gid values from the 'stat' structure.  */
-	uid = peek_uint32(tracee, address + offsetof_stat_uid(tracee));
+	uid = peek_uint32(tracee, address + uid_offset);
 	if (errno != 0) 
 		uid = 0; /* Not fatal.  */
 	
-	gid = peek_uint32(tracee, address + offsetof_stat_gid(tracee));
+	gid = peek_uint32(tracee, address + gid_offset);
 	if (errno != 0) 
 		gid = 0; /* Not fatal.  */
 	
 	/* Override only if the file is owned by the current user.
 	 * Errors are not fatal here.  */
 	if (uid == getuid()) 
-		poke_uint32(tracee, address + offsetof_stat_uid(tracee), config->suid);
+		poke_uint32(tracee, address + uid_offset, config->suid);
 	
 	if (gid == getgid()) 
-		poke_uint32(tracee, address + offsetof_stat_gid(tracee), config->sgid);
+		poke_uint32(tracee, address + gid_offset, config->sgid);
 	
 	return 0;
 }

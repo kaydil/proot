@@ -352,4 +352,5 @@ static const Sysnum sysnums_i386[] = {
 	[ 352 ] = PR_sched_getattr,
 	[ 353 ] = PR_renameat2,
 	[ 356 ] = PR_memfd_create,
+	[ 383 ] = PR_statx,
 };

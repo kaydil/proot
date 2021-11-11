@@ -345,6 +345,7 @@ static const FilteredSysnum filtered_sysnums[] = {
 	{ PR_lsetxattr,		FILTER_SYSEXIT },
 	{ PR_fsetxattr,		FILTER_SYSEXIT },
 	{ PR_stat,		FILTER_SYSEXIT },
+	{ PR_statx,		FILTER_SYSEXIT },
 	{ PR_stat64,		FILTER_SYSEXIT },
 	{ PR_statfs,		FILTER_SYSEXIT },
 	{ PR_statfs64,		FILTER_SYSEXIT },
@@ -424,6 +425,7 @@ static void override_permissions(const Tracee *tracee, const char *path, bool is
 		case PR_oldlstat:
 		case PR_oldstat:
 		case PR_stat:
+		case PR_statx:
 		case PR_stat64:
 		case PR_statfs:
 		case PR_statfs64:
@@ -744,9 +746,6 @@ static int handle_sysexit_end(Tracee *tracee, Config *config)
 #ifdef USERLAND
 	word_t result;
 #endif
-#ifndef USERLAND
-	Reg stat_sysarg = SYSARG_2;
-#endif
 
 	sysnum = get_sysnum(tracee, ORIGINAL);
 
@@ -927,14 +926,14 @@ static int handle_sysexit_end(Tracee *tracee, Config *config)
 #ifndef USERLAND
 	case PR_fstatat64:
 	case PR_newfstatat:
-		stat_sysarg = SYSARG_3;
 	case PR_stat64:
 	case PR_lstat64:
 	case PR_fstat64:
 	case PR_stat:
+	case PR_statx:
 	case PR_lstat:
 	case PR_fstat: 
-		return handle_stat_exit_end(tracee, config, stat_sysarg);
+		return handle_stat_exit_end(tracee, config, sysnum);
 #endif /* ifndef USERLAND */
 
 #ifdef USERLAND
@@ -944,6 +943,7 @@ static int handle_sysexit_end(Tracee *tracee, Config *config)
 	case PR_lstat64:
 	case PR_fstat64:
 	case PR_stat:
+	case PR_statx:
 	case PR_lstat:
 	case PR_fstat: 
 		return handle_stat_exit_end(tracee, config, sysnum);
