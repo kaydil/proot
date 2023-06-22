@@ -344,4 +344,5 @@ static const Sysnum sysnums_arm[] = {
 	[ 385 ] = PR_memfd_create,
 	[ 397 ] = PR_statx,
 	[ 412 ] = PR_utimensat_time64,
+	[ 439 ] = PR_faccessat2,
 };

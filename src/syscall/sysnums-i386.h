@@ -354,4 +354,5 @@ static const Sysnum sysnums_i386[] = {
 	[ 356 ] = PR_memfd_create,
 	[ 383 ] = PR_statx,
 	[ 412 ] = PR_utimensat_time64,
+	[ 439 ] = PR_faccessat2,
 };
