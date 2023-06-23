@@ -322,7 +322,6 @@ static int handle_sysexit_end(Tracee *tracee)
 	case PR_fstat: {                   //int fstat(int fd, struct stat *buf);
 		word_t result;
 		Reg sysarg_stat;
-		Reg sysarg_path;
 		int status;
 		struct stat statl;
 		ssize_t size;
@@ -337,32 +336,50 @@ static int handle_sysexit_end(Tracee *tracee)
 		if (result != 0)
 			return 0;
 
-		if (sysnum == PR_fstat64 || sysnum == PR_fstat) {
-			#ifndef USERLAND
+		switch (sysnum) {
+			case PR_fstat:
+			case PR_fstat64:
+			case PR_fstatat64:
+			case PR_newfstatat:
+			case PR_statx: {
 				status = readlink_proc_pid_fd(tracee->pid, peek_reg(tracee, MODIFIED, SYSARG_1), original);
 				if (status < 0) {
 					VERBOSE(tracee, 3, "link2symlink: readlink_proc_pid_fd failed, status=%d", status);
 					return 0; // Don't alter syscall result
 				}
-				if (strcmp(original + strlen(original) - STRLEN(DELETED_SUFFIX), DELETED_SUFFIX) == 0)
-					original[strlen(original) - STRLEN(DELETED_SUFFIX)] = '\0';
-			#else
-				size = read_string(tracee, original, peek_reg(tracee, CURRENT, SYSARG_2), PATH_MAX);
-				if (size < 0)
-					return size;
+				size = strlen(original);
+				if (strcmp(original + size - STRLEN(DELETED_SUFFIX), DELETED_SUFFIX) == 0) {
+					size -= STRLEN(DELETED_SUFFIX);
+					original[size] = '\0';
+				}
+				break;
+			}
+		}
+		switch (sysnum) {
+			case PR_fstat:
+			case PR_fstat64:
+				break;
+			default: {
+				Reg sysarg_path;
+				switch (sysnum) {
+					case PR_fstatat64:
+					case PR_newfstatat:
+					case PR_statx:
+						sysarg_path = SYSARG_2;
+						break;
+					default:
+						sysarg_path = SYSARG_1;
+				}
+				const word_t from = peek_reg(tracee, MODIFIED, sysarg_path);
+				if (from == 0)
+					break;
+				const ssize_t r = read_string(tracee, original + size, from, PATH_MAX - size);
+				if (r < 0)
+					return r;
+				size += r;
 				if (size >= PATH_MAX)
 					return -ENAMETOOLONG;
-			#endif
-		} else {
-			if (sysnum == PR_fstatat64 || sysnum == PR_newfstatat || sysnum == PR_statx)
-				sysarg_path = SYSARG_2;
-			else
-				sysarg_path = SYSARG_1;
-			size = read_string(tracee, original, peek_reg(tracee, MODIFIED, sysarg_path), PATH_MAX);
-			if (size < 0)
-				return size;
-			if (size >= PATH_MAX)
-				return -ENAMETOOLONG;
+			}
 		}
 
 		name = strrchr(original, '/');
