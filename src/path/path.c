@@ -322,6 +322,9 @@ int translate_path(Tracee *tracee, char result[PATH_MAX], int dir_fd,
 	char guest_path[PATH_MAX];
 	int status;
 
+	VERBOSE(tracee, 5, "vpid %" PRIu64 ": translate(fd:%d + \"%s\")",
+		tracee != NULL ? tracee->vpid : 0, dir_fd, user_path);
+
 	/* Use "/" as the base if it is an absolute guest path. */
 	if (user_path[0] == '/') {
 		strcpy(result, "/");
@@ -333,6 +336,9 @@ int translate_path(Tracee *tracee, char result[PATH_MAX], int dir_fd,
 		status = readlink_proc_pid_fd(tracee->pid, dir_fd, result);
 		if (status < 0)
 			return status;
+
+		VERBOSE(tracee, 5, "vpid %" PRIu64 ": translate with base \"%s\"",
+			tracee != NULL ? tracee->vpid : 0, result);
 
 		/* Named file descriptors may reference special
 		 * objects like pipes, sockets, inodes, ...  Such
