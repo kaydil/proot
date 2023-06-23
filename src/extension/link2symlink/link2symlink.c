@@ -290,9 +290,7 @@ static int decrement_link_count(Tracee *tracee, Reg sysarg)
  */
 static int handle_sysexit_end(Tracee *tracee)
 {
-	word_t sysnum;
-
-	sysnum = get_sysnum(tracee, ORIGINAL);
+	const word_t sysnum  = get_sysnum(tracee, ORIGINAL);
 
 	#ifdef USERLAND
 		if ((get_sysnum(tracee, CURRENT) == PR_fstat) || (get_sysnum(tracee, CURRENT) == PR_fstat64))
@@ -337,11 +335,24 @@ static int handle_sysexit_end(Tracee *tracee)
 			return 0;
 
 		switch (sysnum) {
-			case PR_fstat:
-			case PR_fstat64:
 			case PR_fstatat64:
 			case PR_newfstatat:
 			case PR_statx: {
+				size = read_string(tracee, original, peek_reg(tracee, MODIFIED, SYSARG_2), PATH_MAX);
+				if (size < 0)
+					return size;
+				if (size >= PATH_MAX)
+					return -ENAMETOOLONG;
+				if (original[0] != '\0') { // FD + path concatenation is not required at the moment
+					VERBOSE(tracee, 5, "link2symlink: resolved via path as \"%s\"", original);
+					break;
+				}
+				if (peek_reg(tracee, MODIFIED, SYSARG_1) == AT_FDCWD)
+					return 0; // No directory hardlinks
+				// [[fallthrough]];
+			}
+			case PR_fstat:
+			case PR_fstat64: {
 				status = readlink_proc_pid_fd(tracee->pid, peek_reg(tracee, MODIFIED, SYSARG_1), original);
 				if (status < 0) {
 					VERBOSE(tracee, 3, "link2symlink: readlink_proc_pid_fd failed, status=%d", status);
@@ -352,33 +363,18 @@ static int handle_sysexit_end(Tracee *tracee)
 					size -= STRLEN(DELETED_SUFFIX);
 					original[size] = '\0';
 				}
+				VERBOSE(tracee, 5, "link2symlink: resolved via fd as \"%s\"", original);
 				break;
 			}
-		}
-		switch (sysnum) {
-			case PR_fstat:
-			case PR_fstat64:
-				break;
 			default: {
-				Reg sysarg_path;
-				switch (sysnum) {
-					case PR_fstatat64:
-					case PR_newfstatat:
-					case PR_statx:
-						sysarg_path = SYSARG_2;
-						break;
-					default:
-						sysarg_path = SYSARG_1;
-				}
-				const word_t from = peek_reg(tracee, MODIFIED, sysarg_path);
-				if (from == 0)
-					break;
-				const ssize_t r = read_string(tracee, original + size, from, PATH_MAX - size);
-				if (r < 0)
-					return r;
-				size += r;
+				size = read_string(tracee, original, peek_reg(tracee, MODIFIED, SYSARG_1), PATH_MAX);
+				if (size < 0)
+					return size;
 				if (size >= PATH_MAX)
 					return -ENAMETOOLONG;
+				if (original[0] == '\0')
+					return 0;
+				VERBOSE(tracee, 5, "link2symlink: resolved via path as \"%s\"", original);
 			}
 		}
 
@@ -390,6 +386,10 @@ static int handle_sysexit_end(Tracee *tracee)
 
 		/* Check if it is a link */
 		status = lstat(original, &statl);
+		if (status < 0) {
+			VERBOSE(tracee, 3, "link2symlink: can't stat \"%s\"", original);
+			return 0;
+		}
 
 		if (strncmp(name, PREFIX, STRLEN(PREFIX)) == 0) {
 			if (S_ISLNK(statl.st_mode)) {
@@ -470,15 +470,16 @@ static void translated_path(Tracee *tracee, char translated_path[PATH_MAX])
 	int status;
 
 	/* Don't translate l2s symlinks if call is (un)link */
-	Sysnum sysnum = get_sysnum(tracee, ORIGINAL);
-	if (   sysnum == PR_unlink
-	    || sysnum == PR_unlinkat
-	    || sysnum == PR_link
-	    || sysnum == PR_linkat
-	    || sysnum == PR_rename
-	    || sysnum == PR_renameat
-	    || sysnum == PR_renameat2) {
-		return;
+	const Sysnum sysnum = get_sysnum(tracee, ORIGINAL);
+	switch (sysnum) {
+		case PR_unlink:
+		case PR_unlinkat:
+		case PR_link:
+		case PR_linkat:
+		case PR_rename:
+		case PR_renameat:
+		case PR_renameat2:
+			return;
 	}
 
 	if (should_skip_file_access_due_to_f2fs_bug(tracee, translated_path))
